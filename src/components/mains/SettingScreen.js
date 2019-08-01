@@ -4,36 +4,45 @@ import { Icon, Button } from 'react-native-elements';
 
 class SettingScreen extends Component {
 
-    state = {
-        isLocation: false,
-        isUpdateLocation: false,
-    }
-
     componentDidMount() {
-        this.getSetting();
+        this.getSetting()
+        .then((res) => {
+            this.props.updateSetting(res);
+        });
     }
 
     getSetting = async () => {
         try {
             const obj = {};
-            let settings = await AsyncStorage.getItem('settings');
-            settings = JSON.parse(settings);
-            Object.assign(obj, settings);// không có cũng đc
-            this.setState(obj);
+            await AsyncStorage.getItem('settings').then((strResult) => {
+                const result = JSON.parse(strResult) || {};
+                // console.log(result);
+                Object.assign(obj, result);
+            });
+            // let settings = await AsyncStorage.getItem('settings');
+            // settings = JSON.parse(settings);
+            // Object.assign(obj, settings);
+            return obj;
         } catch (e) {
         } finally {
         }
-    }
+    };
 
-    switchChanged(field, value) {
+    saveChanged = async(field, value) => {
         const obj = {};
         obj[field] = value;
-        AsyncStorage.getItem('settings').then(function (strResult) {
+        AsyncStorage.getItem('settings').then((strResult) => {
             const result = JSON.parse(strResult) || {};
             Object.assign(result, obj);
-            AsyncStorage.setItem('settings', JSON.stringify(result));
+            AsyncStorage.setItem('settings', JSON.stringify(result))
         });
-        this.setState(obj);
+    };
+
+    switchChanged = (field, value) => {
+        this.saveChanged(field, value)
+        .then(() => {
+            this.props.settingChange(field, value);
+        });
     }
 
     openDrawer = () => {
@@ -53,6 +62,8 @@ class SettingScreen extends Component {
             switchStyle,
             textStyle
         } = styles;
+
+        const { mySetting, locationChange, locationUpdateChange } = this.props;
 
         return (
             <View style={container}>
@@ -77,14 +88,14 @@ class SettingScreen extends Component {
                             />
                             <Text style={textStyle}>
                                 {
-                                    (this.state.isLocation) ?
+                                    (mySetting.isLocation) ?
                                         'Tắt vị trí của bạn' : 'Bật vị trí của bạn'
                                 }
                             </Text>
                         </View>
                         <Switch
-                            value={this.state.isLocation}
-                            onValueChange={() => this.switchChanged('isLocation', !this.state.isLocation)}
+                            value={mySetting.isLocation}
+                            onValueChange={this.switchChanged('isLocation', true)}
                         />
                     </View>
 
@@ -96,14 +107,14 @@ class SettingScreen extends Component {
                             />
                             <Text style={textStyle}>
                                 {
-                                    (this.state.isUpdateLocation) ?
+                                    (mySetting.isUpdateLocation) ?
                                         'Tắt cập nhật vị trí' : 'Bật cập nhật vị trí'
                                 }
                             </Text>
                         </View>
                         <Switch
-                            value={this.state.isUpdateLocation}
-                            onValueChange={() => this.switchChanged('isUpdateLocation', !this.state.isUpdateLocation)}
+                            value={mySetting.isUpdateLocation}
+                            onValueChange={this.switchChanged('isUpdateLocation', true)}
                         />
                     </View>
 

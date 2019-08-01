@@ -12,4 +12,25 @@ const firebaseConfig = {
 
 const firebaseApp = firebase.initializeApp(firebaseConfig);
 
+export const readData = (userName) => {
+    let obj = {
+        latitude: null,
+        longitude: null,
+    };
+    firebaseApp.database().ref(userName).on('value', function(snapshot) {
+        obj = {
+            latitude: snapshot.val().latitude,
+            longitude: snapshot.val().longitude
+        };
+    });  
+    return obj;   
+};
+
+export const writeData = (userName) => {
+    firebaseApp.database().ref(userName).set({
+        latitude: 0.1,
+        longitude: 0,
+    });
+};
+
 export default firebaseApp;

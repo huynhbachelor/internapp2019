@@ -1,21 +1,23 @@
-import { createDrawerNavigator } from 'react-navigation';
+import { createDrawerNavigator, createAppContainer } from 'react-navigation';
 import HomeScreen from './HomeScreen';
 import CustomDrawer from './CustomDrawer';
-import SettingScreen from './SettingScreen';
+import SettingContainer from '../../containers/SettingContainer';
 import ProfileScreen from './ProfileScreen';
 
-const AppStack = createDrawerNavigator(
+const AppDrawer = createDrawerNavigator(
     { 
         Home: HomeScreen,
-        Setting: SettingScreen,
+        Setting: SettingContainer,
         Profile: ProfileScreen,
     },
     {
-        initialRouteName: 'Profile',
+        initialRouteName: 'Setting',
         mode: 'modal',
         headerMode: 'none',
         contentComponent: CustomDrawer
     }
 );
+
+const AppStack = createAppContainer(AppDrawer);
 
 export default AppStack;
