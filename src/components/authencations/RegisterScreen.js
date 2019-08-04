@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { Icon, Input, Button, } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { writeData } from '../../firebase';
 import register from '../../api/register';
 
 
@@ -31,7 +30,6 @@ class RegisterScreen extends Component {
     }
 
     onSuccess() {
-        writeData(this.state.userName);
         Alert.alert(
             'Thông báo',
             'Đăng kí thành công!',
@@ -48,7 +46,7 @@ class RegisterScreen extends Component {
     onFail() {
         Alert.alert(
             'Thông báo',
-            'User đã tồn tại hoặc lỗi không biết!',
+            'User đã tồn tại',
             [
                 { text: 'OK', onPress: () => this.removeEmail.bind(this) }
             ],

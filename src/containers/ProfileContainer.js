@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
 import { connect } from 'react-redux';
-import { profileChange, imgChange } from '../actions/ProfileAction';
+import profileChange, { imgChange } from '../actions/ProfileAction';
 import ProfileScreen from '../components/mains/ProfileScreen';
 
 class ProfileContainer extends Component {
@@ -11,7 +11,6 @@ class ProfileContainer extends Component {
             <ProfileScreen
                 {...this.props}
                 profile={this.props.profile}
-                updateProfile={this.props.changeProfile}
                 updateImg={this.props.changeImg}
             />
         );

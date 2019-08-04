@@ -9,9 +9,9 @@ class ResultScreen extends Component {
 
     state = {
         result: {
-            Username: 'Amy Farha',
-            Avatar_url: 'image/user.jpg',
-            subtitle: 'Vice President',
+            Username: '',
+            Avatar_url: '',
+            subtitle: '',
         }
     }
 
@@ -24,6 +24,7 @@ class ResultScreen extends Component {
     onAddFriend = async() => {
         const userToken = await AsyncStorage.getItem('userToken');
         addFriend(userToken, this.state.result.Username).then(res => {
+            console.log(res);
             if (res === 'THANH_CONG') {
                 this.props.navigation.navigate('SucessOverlay', {
                     SUCESS: 1

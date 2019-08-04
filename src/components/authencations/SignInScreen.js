@@ -26,12 +26,6 @@ class SignInScreen extends Component {
         passWord: '',
     }
 
-    // getRef = (ref) => {
-    //     if (this.props.getRef) {
-    //         this.props.getRef(ref);
-    //     }
-    // }
-
     componentDidMount() {
         this.getLogin();
     }
@@ -47,7 +41,7 @@ class SignInScreen extends Component {
         );
     }
 
-    onSuccess = async (token, user) => {
+    onSuccess = async (token) => {
         await AsyncStorage.setItem('userToken', token);
         const {
             checked,
@@ -59,7 +53,7 @@ class SignInScreen extends Component {
         } else {
             this.loginChanged(checked, '', '');
         }
-        this.props.navigation.navigate('App', user);
+        this.props.navigation.navigate('AuthLoading');
     };
 
     getLogin = async () => {
@@ -67,7 +61,7 @@ class SignInScreen extends Component {
             const obj = {};
             let Login = await AsyncStorage.getItem('LOGIN');
             Login = JSON.parse(Login);
-            Object.assign(obj, Login);// không có cũng đc
+            Object.assign(obj, Login);
             this.setState(obj);
             console.log(obj);
         } catch (e) {

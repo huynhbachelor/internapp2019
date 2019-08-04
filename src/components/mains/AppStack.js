@@ -1,14 +1,13 @@
 import { createDrawerNavigator, createAppContainer } from 'react-navigation';
-import HomeScreen from './HomeScreen';
-// import CustomDrawer from './CustomDrawer';
+
 import SettingContainer from '../../containers/SettingContainer';
 import ProfileContainer from '../../containers/ProfileContainer';
 import DrawerContainer from '../../containers/DrawerContainer';
-// import ProfileScreen from './ProfileScreen';
+import HomeContainer from '../../containers/HomeContainer';
 
 const AppDrawer = createDrawerNavigator(
     { 
-        Home: HomeScreen,
+        Home: HomeContainer,
         Setting: SettingContainer,
         Profile: ProfileContainer,
     },

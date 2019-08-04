@@ -1,5 +1,6 @@
 const stateSetting = {
     profile: {
+        token: '',
         Username: '',
         Email: '',
         subtitle: '',
@@ -14,7 +15,7 @@ const ProfileReducer = (state = stateSetting, action) => {
             return { ...state, profile: action.profile };
         }
         case 'IMGCHANG': {
-            return { ...state, profile: { Avatar_url: action.img } };
+            return { ...state, profile: { ...state.profile, Avatar_url: action.img } };
         }
         default: return state;
     }

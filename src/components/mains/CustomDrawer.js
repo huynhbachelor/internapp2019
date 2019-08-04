@@ -7,6 +7,7 @@ import {
     Text,
     TouchableOpacity,
     ListView,
+    Alert,
 } from 'react-native';
 import {
     ListItem,
@@ -15,18 +16,20 @@ import {
     Image,
     SearchBar,
     Icon,
+    Button,
 } from 'react-native-elements';
 
 import icMenu from '../../media/icons/icMenu.png';
-import url, { urlImg } from '../../api/base_url';
-import firebaseApp, { addFriend, submitFriend } from '../../firebase';
+import { urlImg } from '../../api/base_url';
+import firebaseApp from '../../firebase';
+import submitFriend from '../../api/submitFriend';
+import unFriendWait from '../../api/unFriendWait';
 
 
 class CustomDrawer extends Component {
 
     state = {
         search: '',
-        status: false,
         dataSourceWait: new ListView.DataSource(
             {
                 rowHasChanged: (r1, r2) => r1 !== r2,
@@ -42,13 +45,18 @@ class CustomDrawer extends Component {
     }
 
     componentDidMount() {
-        if (this.userName !== '') {
-            this.getListFriend(this.userName);
-            this.getListFriendWait(this.userName);
-        }
-        // this.getListChange('test');
+        const user = this.props.profile.Username;
+        this.updateList(user);
+        firebaseApp.database().ref(user)
+            .child('friends')
+            .on('child_changed', (snapshot) => {
+                const items = {
+                    data: snapshot.val(),
+                    key: snapshot.key,
+                };
+                this.onChange(items);
+            });
     }
-
 
     onDataArrived(newData) {
         this.setState({
@@ -56,24 +64,101 @@ class CustomDrawer extends Component {
         });
     }
 
+    onChange = (item) => {
+        const items = this.state.dataSourceFriend._dataBlob;
+        items.map(e => {
+            if (e.key === item.key) {
+                e.data = item.data;
+            }
+        });
+        this.onDataArrived(items);
+    }
+
+
+    onSubmitFriend = (user) => {
+        submitFriend(this.props.profile.token, user)
+            .then(res => {
+                console.log(res);
+                if (res === 'THANH_CONG') {
+                    this.updateList(this.props.profile.Username);
+                    Alert.alert(
+                        'Thông báo',
+                        'Kết bạn thành công!',
+                        [
+                            {
+                                text: 'OK',
+                            }
+                        ],
+                        { cancelable: false }
+                    );
+                } else {
+                    Alert.alert(
+                        'Thông báo',
+                        'Không thể kết bạn! Hãy thử lại!',
+                        [
+                            {
+                                text: 'Cancel'
+                            },
+                            {
+                                text: 'Ok',
+                                onPress: () => this.onSubmitFriend(user)
+                            }
+                        ],
+                        { cancelable: true }
+                    );
+                }
+            })
+            .catch(() => {
+                Alert.alert(
+                    'Thông báo',
+                    'Kết nối máy chủ thất bại! thử lại!',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => this.onSubmitFriend(user)
+                        }
+                    ],
+                    { cancelable: true }
+                );
+            });
+    }
+
+    onCancelFriend = (user) => {
+        Alert.alert(
+            'Thông báo',
+            'Bạn chắc chắn không quen! Xác nhận xóa?',
+            [
+                {
+                    text: 'Cancel'
+                },
+                {
+                    text: 'Ok',
+                    onPress: () => this.cancelFriend(user)
+                }
+            ],
+            { cancelable: true }
+        );
+    }
+
+
     getListFriend = (userName) => {
         const items = [];
         firebaseApp.database().ref(userName)
-        .child('friends')
-        .once('child_added', (snapshot) => {
-            items.push({
-                data: snapshot.val(),
-                key: snapshot.key,
+            .child('friends')
+            .on('child_added', (snapshot) => {
+                items.push({
+                    data: snapshot.val(),
+                    key: snapshot.key,
+                });
+                this.onDataArrived(items);
             });
-            this.onDataArrived(items);
-        });
     }
 
     getListFriendWait = (userName) => {
         const items = [];
         firebaseApp.database().ref(userName)
         .child('friend_wait')
-        .once('child_added', (snapshot) => {
+        .on('child_added', (snapshot) => {
             items.push({
                 data: snapshot.val(),
                 key: snapshot.key,
@@ -84,7 +169,20 @@ class CustomDrawer extends Component {
         });
     }
 
-    userName = this.props.profile.Username;
+    cancelFriend = (user) => {
+        unFriendWait(this.props.profile.token, user);
+        this.getListFriendWait(user);
+    }
+
+    updateList = (userName) => {
+        if (userName !== '') {
+            this.setState({
+                status: false,
+            });
+            this.getListFriend(userName);
+            this.getListFriendWait(userName);
+        }
+    }
 
     updateSearch = search => {
         this.setState({ search });
@@ -104,9 +202,13 @@ class CustomDrawer extends Component {
     }
 
     popoverItems = (
-        <TouchableOpacity >
-            <Text style={{ color: '#fff' }}>Hủy kết bạn</Text>
-        </TouchableOpacity>
+        <View>
+            <TouchableOpacity>
+                <Text
+                    style={{color: '#fff' }}
+                >Hủy kết bạn</Text>
+            </TouchableOpacity>
+        </View>
     )
 
     renderItemsWait = ({ item }) => (
@@ -124,9 +226,11 @@ class CustomDrawer extends Component {
                     >
                         <Icon
                             name='done'
+                            onPress={() => this.onSubmitFriend(item.key)}
                         />
                         <Icon
                             name='clear'
+                            onPress={() => this.onCancelFriend(item.key)}
                         />
                     </View>
                 }
@@ -158,7 +262,9 @@ class CustomDrawer extends Component {
                                 borderRadius: 5,
                             }}
                         />
-                        <Tooltip popover={this.popoverItems}>
+                        <Tooltip 
+                        popover={this.popoverItems}
+                        >
                             <Image
                                 source={icMenu}
                                 style={{ width: 15, height: 15, marginLeft: 5 }}
@@ -178,6 +284,10 @@ class CustomDrawer extends Component {
             footer
         } = styles;
 
+        const {
+            Avatar_url
+        } = this.props.profile;
+
         return (
             <SafeAreaView
                 style={container}
@@ -187,7 +297,7 @@ class CustomDrawer extends Component {
                     <Avatar
                         rounded
                         source={{
-                            uri: this.props.profile.Avatar_url,
+                            uri: Avatar_url,
                             cache: 'reload'
                         }}
                         size={64}
@@ -214,12 +324,14 @@ class CustomDrawer extends Component {
                         renderItem={this.renderItemsWait}
                     />
                 </View>
-                <FlatList
-                    data={this.state.dataSourceFriend._dataBlob}
-                    extraData={this.state}
-                    keyExtractor={(item) => item.key}
-                    renderItem={this.renderItems}
-                />
+                <View style={{ flex: 5 }}>
+                    <FlatList
+                        data={this.state.dataSourceFriend._dataBlob}
+                        extraData={this.state}
+                        keyExtractor={(item) => item.key}
+                        renderItem={this.renderItems}
+                    />
+                </View>
                 <SearchBar
                     containerStyle={footer}
                     placeholder="Type Here..."
@@ -236,24 +348,22 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        width: '100%',
-        height: 150,
+        flex: 2,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'gray',
     },
     friend: {
-        width: '100%',
+        flex: 1,
         borderBottomWidth: 1,
-        height: 80,
     },
     footer: {
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
         height: 40,
-        position: 'absolute',
-        bottom: 0
+        // position: 'absolute',
+        // bottom: 0
     },
 });
 

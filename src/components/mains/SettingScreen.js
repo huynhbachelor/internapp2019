@@ -50,7 +50,7 @@ class SettingScreen extends Component {
         this.props.navigation.openDrawer();
     }
 
-    signOutAsync = async () => {
+    signOutAsync = async() => {
         await AsyncStorage.removeItem('userToken');
         this.props.navigation.navigate('Auth');
     };

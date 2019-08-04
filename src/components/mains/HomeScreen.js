@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import {
     View,
-    AsyncStorage,
     StyleSheet,
     Text,
     ToastAndroid,
@@ -14,9 +13,6 @@ import Geolocation from 'react-native-geolocation-service';
 import OverlayScreen from './myoverlay/OverlayScreen';
 
 class HomeScreen extends Component {
-    static navigationOptions = {
-        title: 'Welcome to the app!',
-    };
 
     state = {
         isVisible: false,

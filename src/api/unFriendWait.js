@@ -1,7 +1,7 @@
 import url from './base_url';
 
-const submitFriend = async(token, userFriend) => (
-    fetch(url + 'submitfriend.php',
+const unFriendWait = async(token, userFriend) => (
+    fetch(url + 'unfriendwait.php',
     {   
         method: 'POST',
         headers: {
@@ -13,4 +13,4 @@ const submitFriend = async(token, userFriend) => (
     .then(res => res.text())
 );
 
-export default submitFriend;
+export default unFriendWait;

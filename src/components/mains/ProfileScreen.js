@@ -1,54 +1,22 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, AsyncStorage } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Icon, Input, Avatar, Button } from 'react-native-elements';
 import ImagePicker from 'react-native-image-picker';
 import uploadImg from '../../api/uploadImg';
-import url, { urlImg } from '../../api/base_url';
-import checkLogin from '../../api/checkLogin';
 import changeInfor from '../../api/changeInfor';
 
 class ProfileScreen extends Component {
 
     state = {
-        token: '',
+        Email: '',
+        subtitle: '',
     }
 
     componentDidMount() {
-        this.getLoginInfor();
-    }
-
-    getLoginInfor = async () => {
-        const userToken = await AsyncStorage.getItem('userToken');
-        checkLogin(userToken)
-            .then(res => {
-                if (res.token === 'HET_HAN') {
-                    alert('Đăng nhập quá hạn mời bạn đăng nhập lại!');
-                    this.props.navigation.navigate('SignIn');
-                } else if (res.token === 'TOKEN_KHONG_HOP_LE') {
-                    alert('Lỗi! Đăng nhập lại!');
-                    this.props.navigation.navigate('SignIn');
-                } else {
-                    this.setState({
-                        token: res.token,
-                        // Username: res.user.Username,
-                        // Email: res.user.Email,
-                        // subtitle: res.user.subtitle,
-                        // Avatar_url: (res.user.Avatar_url === '') ? this.state.Avatar_url :
-                        // url + 'image/' + res.user.Avatar_url + '?' + new Date(),
-                    });
-                    const profile = {
-                        Username: res.user.Username,
-                        Email: res.user.Email,
-                        subtitle: res.user.subtitle,
-                        Avatar_url: urlImg + res.user.Avatar_url + '?' + new Date(),
-                    };
-                    this.props.changeProfile(profile);
-                    AsyncStorage.setItem('userToken', res.token);
-                }
-            })
-            .catch(e => {
-                alert('Lỗi không xác định!' + e);
-            });
+        this.setState({
+            Email: this.props.profile.Email,
+            subtitle: this.props.profile.subtitle,
+        });
     }
 
     selecctImage = async () => {
@@ -83,11 +51,17 @@ class ProfileScreen extends Component {
     }
 
     updateProfile = () => {
-        if (uploadImg(this.props.profile.Username, this.props.profile.Avatar_url)) {
-            if (changeInfor(this.state.token, 
-                this.props.profile.subtitle, 
+        if (uploadImg(this.props.profile.Username, this.props.profile.Avatat_url)) {
+            if (changeInfor(this.props.profile.token,
+                this.props.profile.subtitle,
                 this.props.profile.Email)) {
                 alert('Cập nhật thành công!');
+                const profile = {
+                    ...this.props.profile,
+                    Email: this.state.Email,
+                    subtitle: this.state.subtitle,
+                };
+                this.props.changeProfile(profile);
                 return;
             }
         }
@@ -109,12 +83,15 @@ class ProfileScreen extends Component {
             formStyle,
             textStyle,
         } = styles;
-        
+
         const {
             Avatar_url,
+        } = this.props.profile;
+
+        const {
             Email,
             subtitle,
-        } = this.props.profile;
+        } = this.state;
 
         return (
             <View style={container}>
@@ -148,7 +125,7 @@ class ProfileScreen extends Component {
                                 fontWeight: 'bold',
                                 fontSize: 25,
                             }}
-                        >{this.state.Username}</Text>
+                        >{this.props.profile.Username}</Text>
                     </View>
                     <View style={{ padding: 10, width: '100%', height: 'auto' }}>
                         <Input
