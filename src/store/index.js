@@ -1,6 +1,12 @@
-import { createStore } from 'redux';
+import { createStore, combineReducers } from 'redux';
 import SettingReducer from '../reducers/SettingReducer';
+import ProfileReducer from '../reducers/ProfileReducer';
 
-const store = createStore(SettingReducer);
+const store = createStore(combineReducers(
+    { 
+        SettingReducer,
+        ProfileReducer
+    }
+));
 
 export default store;

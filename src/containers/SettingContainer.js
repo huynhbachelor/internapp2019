@@ -1,18 +1,15 @@
 import React, { Component } from 'react';
 
 import { connect } from 'react-redux';
-import
+import isLoadSetting,
 { 
-    isLoadSetting,
-    isSettingChange,  
+    isSettingChange,
 } from '../actions/SettingAction';
 import SettingScreen from '../components/mains/SettingScreen';
 
 class SettingContainer extends Component {
 
     render() {
-        console.log('container');
-        console.log(this.props.mySetting);
         return (
             <SettingScreen mySetting={this.props.mySetting} {...this.props} />
         );
@@ -22,7 +19,7 @@ class SettingContainer extends Component {
 export default connect(
     state => {
         return {
-            mySetting: state.mySetting,
+            mySetting: state.SettingReducer.mySetting,
         };
     },
     dispatch => {

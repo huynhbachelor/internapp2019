@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, AsyncStorage } from 'react-native';
 import { Icon, Input, Avatar, Button } from 'react-native-elements';
 import ImagePicker from 'react-native-image-picker';
 import uploadImg from '../../api/uploadImg';
-import url from '../../api/base_url';
+import url, { urlImg } from '../../api/base_url';
 import checkLogin from '../../api/checkLogin';
 import changeInfor from '../../api/changeInfor';
 
@@ -11,10 +11,6 @@ class ProfileScreen extends Component {
 
     state = {
         token: '',
-        Username: '',
-        Email: '',
-        subtitle: '',
-        Avatar_url: 'https://scontent.fsgn4-1.fna.fbcdn.net/v/t1.0-9/21370917_662301493968461_2919848258433440688_n.jpg?_nc_cat=103&_nc_oc=AQlC2X_AjlNePuq0S74sSWaoi88SkE1E8Pp8lOynWJg_Vt4i1YxE9GN-ECo0r-pbZQ0&_nc_ht=scontent.fsgn4-1.fna&oh=ae7b8a2cdea256c35a7fad54c9a300ef&oe=5DE7D727',
     }
 
     componentDidMount() {
@@ -34,12 +30,19 @@ class ProfileScreen extends Component {
                 } else {
                     this.setState({
                         token: res.token,
+                        // Username: res.user.Username,
+                        // Email: res.user.Email,
+                        // subtitle: res.user.subtitle,
+                        // Avatar_url: (res.user.Avatar_url === '') ? this.state.Avatar_url :
+                        // url + 'image/' + res.user.Avatar_url + '?' + new Date(),
+                    });
+                    const profile = {
                         Username: res.user.Username,
                         Email: res.user.Email,
                         subtitle: res.user.subtitle,
-                        Avatar_url: (res.user.Avatar_url === '') ? this.state.Avatar_url :
-                        url + 'image/' + res.user.Avatar_url + '?' + new Date(),
-                    });
+                        Avatar_url: urlImg + res.user.Avatar_url + '?' + new Date(),
+                    };
+                    this.props.changeProfile(profile);
                     AsyncStorage.setItem('userToken', res.token);
                 }
             })
@@ -64,8 +67,8 @@ class ProfileScreen extends Component {
                 } else if (response.customButton) {
 
                 } else {
-                    // this.uploadImg(response.uri);
-                    this.setState({ Avatar_url: response.uri });
+                    // this.uploadImg(response.uri);setState({ Avatar_url: response.uri });
+                    this.props.updateImg(response.uri);
                 }
             }
         );
@@ -80,8 +83,10 @@ class ProfileScreen extends Component {
     }
 
     updateProfile = () => {
-        if (uploadImg(this.state.Username, this.state.Avatar_url)) {
-            if (changeInfor(this.state.token, this.state.subtitle, this.state.Email)) {
+        if (uploadImg(this.props.profile.Username, this.props.profile.Avatar_url)) {
+            if (changeInfor(this.state.token, 
+                this.props.profile.subtitle, 
+                this.props.profile.Email)) {
                 alert('Cập nhật thành công!');
                 return;
             }
@@ -104,12 +109,12 @@ class ProfileScreen extends Component {
             formStyle,
             textStyle,
         } = styles;
-
+        
         const {
             Avatar_url,
             Email,
             subtitle,
-        } = this.state;
+        } = this.props.profile;
 
         return (
             <View style={container}>

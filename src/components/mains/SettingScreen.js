@@ -1,14 +1,15 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, Switch, AsyncStorage } from 'react-native';
 import { Icon, Button } from 'react-native-elements';
+import { } from '../../firebase/index';
 
 class SettingScreen extends Component {
 
     componentDidMount() {
         this.getSetting()
-        .then((res) => {
-            this.props.updateSetting(res);
-        });
+            .then((res) => {
+                this.props.updateSetting(res);
+            });
     }
 
     getSetting = async () => {
@@ -28,7 +29,7 @@ class SettingScreen extends Component {
         }
     };
 
-    saveChanged = async(field, value) => {
+    saveChanged = async (field, value) => {
         const obj = {};
         obj[field] = value;
         AsyncStorage.getItem('settings').then((strResult) => {
@@ -40,9 +41,9 @@ class SettingScreen extends Component {
 
     switchChanged = (field, value) => {
         this.saveChanged(field, value)
-        .then(() => {
-            this.props.settingChange(field, value);
-        });
+            .then(() => {
+                this.props.settingChange(field, value);
+            });
     }
 
     openDrawer = () => {
@@ -63,7 +64,7 @@ class SettingScreen extends Component {
             textStyle
         } = styles;
 
-        const { mySetting, locationChange, locationUpdateChange } = this.props;
+        const { mySetting } = this.props;
 
         return (
             <View style={container}>

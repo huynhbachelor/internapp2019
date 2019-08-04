@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, AsyncStorage } from 'react-native';
 import { Avatar } from 'react-native-elements';
-import search from '../../../api/search';
-import url from '../../../api/base_url';
+import { urlImg } from '../../../api/base_url';
+import addFriend from '../../../api/addFriend';
 
 
 class ResultScreen extends Component {
@@ -18,6 +18,21 @@ class ResultScreen extends Component {
     componentDidMount() {
         this.setState({
             result: this.props.navigation.getParam('user', ''),
+        });
+    }
+
+    onAddFriend = async() => {
+        const userToken = await AsyncStorage.getItem('userToken');
+        addFriend(userToken, this.state.result.Username).then(res => {
+            if (res === 'THANH_CONG') {
+                this.props.navigation.navigate('SucessOverlay', {
+                    SUCESS: 1
+                });
+            } else {
+                this.props.navigation.navigate('SucessOverlay', {
+                    SUCESS: 0
+                });
+            }
         });
     }
 
@@ -44,7 +59,7 @@ class ResultScreen extends Component {
                     >
                         <Avatar
                             rounded
-                            source={{ uri: url + 'image/' + this.state.result.Avatar_url }}
+                            source={{ uri: urlImg + this.state.result.Avatar_url }}
                             size={50}
                         />
 
@@ -77,6 +92,7 @@ class ResultScreen extends Component {
                             alignItems: 'center',
                             marginRight: 1
                         }}
+                        onPress={this.onAddFriend}
                     >
                         <Text
                             style={{ color: '#fff' }}

@@ -2,6 +2,7 @@ import { createStackNavigator, createAppContainer } from 'react-navigation';
 import SearchScreen from './SearchScreen';
 import ResultScreen from './ResultScreen';
 import ErrorScreen from './ErrorScreen';
+import SucessScreen from './SucessScreen';
 
 
 const stackOverlay = createStackNavigator(
@@ -14,6 +15,9 @@ const stackOverlay = createStackNavigator(
         },
         ErrorOverlay: {
             screen: ErrorScreen
+        },
+        SucessOverlay: {
+            screen: SucessScreen
         }
     },
     {

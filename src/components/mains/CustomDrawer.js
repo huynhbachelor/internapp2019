@@ -6,6 +6,7 @@ import {
     View,
     Text,
     TouchableOpacity,
+    ListView,
 } from 'react-native';
 import {
     ListItem,
@@ -15,48 +16,75 @@ import {
     SearchBar,
     Icon,
 } from 'react-native-elements';
+
 import icMenu from '../../media/icons/icMenu.png';
-import url from '../../api/base_url';
+import url, { urlImg } from '../../api/base_url';
+import firebaseApp, { addFriend, submitFriend } from '../../firebase';
 
 
 class CustomDrawer extends Component {
 
     state = {
-        userName: 'user',
-        data: [],
         search: '',
-        avatarSource: url + 'image/user.jpg',
+        status: false,
+        dataSourceWait: new ListView.DataSource(
+            {
+                rowHasChanged: (r1, r2) => r1 !== r2,
+                sectionHeaderHasChanged: (s1, s2) => s1 !== s2,
+            }
+        ),
+        dataSourceFriend: new ListView.DataSource(
+            {
+                rowHasChanged: (r1, r2) => r1 !== r2,
+                sectionHeaderHasChanged: (s1, s2) => s1 !== s2,
+            }
+        ),
     }
 
-    componentDidMount() { 
-        const arr = [
-            {
-                key: '1',
-                name: 'Amy Farha',
-                avatar_url: 'https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg',
-                subtitle: 'Vice President',
-                online: true,
-            },
-            {
-                key: '2',
-                name: 'Chris Jackson',
-                avatar_url: 'https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg',
-                subtitle: 'Vice Chairman',
-                online: false,
-            },
-            {
-                key: '3',
-                name: 'Chris Jackson',
-                avatar_url: this.state.avatarSource,
-                subtitle: 'Vice Chairman',
-                online: false,
-            },
-        ];
+    componentDidMount() {
+        if (this.userName !== '') {
+            this.getListFriend(this.userName);
+            this.getListFriendWait(this.userName);
+        }
+        // this.getListChange('test');
+    }
+
+
+    onDataArrived(newData) {
         this.setState({
-            avatarSource: this.state.avatarSource + '?' + new Date(),
-            data: arr,
+            dataSourceFriend: this.state.dataSourceFriend.cloneWithRowsAndSections(newData),
         });
     }
+
+    getListFriend = (userName) => {
+        const items = [];
+        firebaseApp.database().ref(userName)
+        .child('friends')
+        .once('child_added', (snapshot) => {
+            items.push({
+                data: snapshot.val(),
+                key: snapshot.key,
+            });
+            this.onDataArrived(items);
+        });
+    }
+
+    getListFriendWait = (userName) => {
+        const items = [];
+        firebaseApp.database().ref(userName)
+        .child('friend_wait')
+        .once('child_added', (snapshot) => {
+            items.push({
+                data: snapshot.val(),
+                key: snapshot.key,
+            });
+            this.setState({
+                dataSourceWait: this.state.dataSourceWait.cloneWithRowsAndSections(items),
+            });
+        });
+    }
+
+    userName = this.props.profile.Username;
 
     updateSearch = search => {
         this.setState({ search });
@@ -81,13 +109,38 @@ class CustomDrawer extends Component {
         </TouchableOpacity>
     )
 
+    renderItemsWait = ({ item }) => (
+        <View style={{ flex: 1 }}>
+            <ListItem
+                leftAvatar={{ source: { uri: urlImg + item.data.Avatar_url } }}
+                title={item.data.subtitle}
+                rightElement={
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <Icon
+                            name='done'
+                        />
+                        <Icon
+                            name='clear'
+                        />
+                    </View>
+                }
+            />
+        </View>
+    )
+
     renderItems = ({ item }) => (
         <View style={{ flex: 1 }}>
             <ListItem
-                key={item.key}
-                leftAvatar={{ source: { uri: item.avatar_url } }}
+                key={item.data.userName}
+                leftAvatar={{ source: { uri: urlImg + item.data.Avatar_url } }}
                 extraData={this.state}
-                title={item.name}
+                title={item.data.subtitle}
                 onPress={this.gotoMap}
                 rightElement={
                     <View
@@ -99,7 +152,7 @@ class CustomDrawer extends Component {
                     >
                         <View
                             style={{
-                                backgroundColor: item.online ? 'green' : 'cyan',
+                                backgroundColor: item.data.online ? 'green' : 'cyan',
                                 width: 10,
                                 height: 10,
                                 borderRadius: 5,
@@ -134,7 +187,7 @@ class CustomDrawer extends Component {
                     <Avatar
                         rounded
                         source={{
-                            uri: this.state.avatarSource,
+                            uri: this.props.profile.Avatar_url,
                             cache: 'reload'
                         }}
                         size={64}
@@ -154,29 +207,15 @@ class CustomDrawer extends Component {
                     />
                 </View>
                 <View style={friend}>
-                    <ListItem
-                        leftAvatar={{ source: { uri: 'https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg' } }}
-                        title='test'
-                        rightElement={
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                    justifyContent: 'center',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <Icon 
-                                    name='done'
-                                />
-                                <Icon 
-                                    name='clear'
-                                />
-                            </View>
-                        }
+                    <FlatList
+                        data={this.state.dataSourceWait._dataBlob}
+                        extraData={this.state}
+                        keyExtractor={(item) => item.key}
+                        renderItem={this.renderItemsWait}
                     />
                 </View>
                 <FlatList
-                    data={this.state.data}
+                    data={this.state.dataSourceFriend._dataBlob}
                     extraData={this.state}
                     keyExtractor={(item) => item.key}
                     renderItem={this.renderItems}
@@ -205,7 +244,8 @@ const styles = StyleSheet.create({
     },
     friend: {
         width: '100%',
-        borderWidth: 1
+        borderBottomWidth: 1,
+        height: 80,
     },
     footer: {
         justifyContent: 'center',

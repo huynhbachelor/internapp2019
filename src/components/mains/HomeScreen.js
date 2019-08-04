@@ -47,7 +47,7 @@ class HomeScreen extends Component {
         this.setState({ loading: true }, () => {
             Geolocation.getCurrentPosition(
                 (position) => {
-                    this.geoSuccess(position);                
+                    this.geoSuccess(position);
                 },
                 (err) => {
                     this.geoFailure(err);

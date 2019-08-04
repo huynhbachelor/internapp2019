@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Icon, Input, Button, } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import writeData from '../../firebase/WriteData';
+import { writeData } from '../../firebase';
 import register from '../../api/register';
 
 
