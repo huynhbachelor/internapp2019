@@ -23,6 +23,8 @@ class ErrorScreen extends Component {
                         }}
                     >
                     {
+                        (re === 2) ?
+                        'Người dùng không nhận lời mời vào lúc này!\nKết bạn lại vào lúc khác!' :
                         (re === 1) ? 
                         'Người dùng không tồn tại!' :
                         'Khung tìm không được để trống!'

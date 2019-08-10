@@ -1,49 +1,42 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, Switch, AsyncStorage } from 'react-native';
 import { Icon, Button } from 'react-native-elements';
-import { } from '../../firebase/index';
+import changeAdd from '../../api/changeAdd';
 
 class SettingScreen extends Component {
 
-    componentDidMount() {
-        this.getSetting()
-            .then((res) => {
-                this.props.updateSetting(res);
-            });
+    componentDidUpdate(preprops) {
+        if (preprops.mySetting !== this.props.mySetting) {
+            this.saveChanged();
+        }
     }
 
-    getSetting = async () => {
-        try {
-            const obj = {};
-            await AsyncStorage.getItem('settings').then((strResult) => {
-                const result = JSON.parse(strResult) || {};
-                // console.log(result);
-                Object.assign(obj, result);
-            });
-            // let settings = await AsyncStorage.getItem('settings');
-            // settings = JSON.parse(settings);
-            // Object.assign(obj, settings);
-            return obj;
-        } catch (e) {
-        } finally {
-        }
-    };
+    onChangeAdd = (field, value) => {
+        changeAdd(this.props.token, (value) ? 0 : 1)
+        .then(res => {
+            if (res === 'THANH_CONG') {
+                this.props.settingChange(field, !value);
+            }
+        });
+    }
 
-    saveChanged = async (field, value) => {
-        const obj = {};
-        obj[field] = value;
+    onChangeLocation = (field, value) => {
+        this.props.settingChange(field, !value);
+    }
+
+    saveChanged = async () => {
+        const obj = this.props.mySetting;
         AsyncStorage.getItem('settings').then((strResult) => {
             const result = JSON.parse(strResult) || {};
             Object.assign(result, obj);
-            AsyncStorage.setItem('settings', JSON.stringify(result))
+            AsyncStorage.setItem('settings', JSON.stringify(result));
         });
     };
 
     switchChanged = (field, value) => {
-        this.saveChanged(field, value)
-            .then(() => {
-                this.props.settingChange(field, value);
-            });
+        if (this.props.mySetting.isLocation) {
+            this.props.settingChange(field, !value);
+        }
     }
 
     openDrawer = () => {
@@ -90,13 +83,15 @@ class SettingScreen extends Component {
                             <Text style={textStyle}>
                                 {
                                     (mySetting.isLocation) ?
-                                        'Tắt vị trí của bạn' : 'Bật vị trí của bạn'
+                                        'Bật vị trí của bạn' : 'Tắt vị trí của bạn'
                                 }
                             </Text>
                         </View>
                         <Switch
                             value={mySetting.isLocation}
-                            onValueChange={this.switchChanged('isLocation', true)}
+                            onChange={
+                                () => this.onChangeLocation('isLocation', mySetting.isLocation)
+                            }
                         />
                     </View>
 
@@ -109,13 +104,34 @@ class SettingScreen extends Component {
                             <Text style={textStyle}>
                                 {
                                     (mySetting.isUpdateLocation) ?
-                                        'Tắt cập nhật vị trí' : 'Bật cập nhật vị trí'
+                                        'Bật cập nhật vị trí' : 'Tắt cập nhật vị trí'
                                 }
                             </Text>
                         </View>
                         <Switch
                             value={mySetting.isUpdateLocation}
-                            onValueChange={this.switchChanged('isUpdateLocation', true)}
+                            onChange={() => this.switchChanged('isUpdateLocation', 
+                            mySetting.isUpdateLocation)}
+                        />
+                    </View>
+
+                    <View style={switchStyle}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Icon
+                                name='group-add'
+                                size={24}
+                            />
+                            <Text style={textStyle}>
+                                {
+                                    (mySetting.isAddFriend) ?
+                                        'Nhận lời mời kết bạn' : 'Không nhận lời mời kết bạn'
+                                }
+                            </Text>
+                        </View>
+                        <Switch
+                            value={mySetting.isAddFriend}
+                            onChange={() => this.onChangeAdd('isAddFriend', 
+                            mySetting.isAddFriend)}
                         />
                     </View>
 

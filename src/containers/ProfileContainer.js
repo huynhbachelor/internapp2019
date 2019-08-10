@@ -29,5 +29,4 @@ export default connect(
             changeImg: (img) => dispatch(imgChange(img)),
         };
     }
-
 )(ProfileContainer);

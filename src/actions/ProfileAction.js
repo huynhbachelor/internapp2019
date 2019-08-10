@@ -3,7 +3,8 @@ export const imgChange = (img) => {
         type: 'IMGCHANG',
         img
     };
-}
+};
+
 
 const profileChange = (profile) => {
     return {

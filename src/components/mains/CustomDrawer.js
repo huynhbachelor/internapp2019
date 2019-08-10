@@ -12,18 +12,20 @@ import {
 import {
     ListItem,
     Avatar,
-    Tooltip,
     Image,
     SearchBar,
     Icon,
-    Button,
 } from 'react-native-elements';
+import PopoverTooltip from 'react-native-popover-tooltip';
 
 import icMenu from '../../media/icons/icMenu.png';
 import { urlImg } from '../../api/base_url';
 import firebaseApp from '../../firebase';
 import submitFriend from '../../api/submitFriend';
 import unFriendWait from '../../api/unFriendWait';
+import unFriend from '../../api/unFriend';
+import blockFriend from '../../api/blockFriend';
+import unBlockFriend from '../../api/unBlockFriend';
 
 
 class CustomDrawer extends Component {
@@ -78,7 +80,6 @@ class CustomDrawer extends Component {
     onSubmitFriend = (user) => {
         submitFriend(this.props.profile.token, user)
             .then(res => {
-                console.log(res);
                 if (res === 'THANH_CONG') {
                     this.updateList(this.props.profile.Username);
                     Alert.alert(
@@ -140,6 +141,51 @@ class CustomDrawer extends Component {
         );
     }
 
+    onUnFriend = (user, name) => {
+        Alert.alert(
+            'Thông báo',
+            'Bạn chắc chắn hủy kết bạn? :(( \n Bạn và ' + name + 'không thể thấy vị trí của nhau',
+            [
+                {
+                    text: 'Cancel'
+                },
+                {
+                    text: 'Ok',
+                    onPress: () => {
+                        unFriend(this.props.profile.token, user)
+                        .then(
+                                this.getListFriend(this.props.profile.Username)
+                        );
+                    }
+                }
+            ],
+            { cancelable: true }
+        );
+    }
+
+    onBlockFriend = (user, status) => {
+        if (!status) {
+            Alert.alert(
+                'Thông báo',
+                'Bạn chắc chắn chặn người này? :((',
+                [
+                    {
+                        text: 'Cancel'
+                    },
+                    {
+                        text: 'Ok',
+                        onPress: () => {
+                            blockFriend(this.props.profile.token, user);
+                        }
+                    }
+                ],
+                { cancelable: true }
+            );
+        } else {
+            unBlockFriend(this.props.profile.token, user);
+        }
+    }
+
 
     getListFriend = (userName) => {
         const items = [];
@@ -176,9 +222,6 @@ class CustomDrawer extends Component {
 
     updateList = (userName) => {
         if (userName !== '') {
-            this.setState({
-                status: false,
-            });
             this.getListFriend(userName);
             this.getListFriendWait(userName);
         }
@@ -188,7 +231,29 @@ class CustomDrawer extends Component {
         this.setState({ search });
     };
 
-    gotoMap = () => {
+    gotoMap = (key, st, subtitle, ava) => {
+        if (st === 'NONE') {
+            Alert.alert(
+                'Thông báo',
+                subtitle + ' không muốn bạn thấy vị trí của họ!\nBạn muốn chuyển qua trang chủ?',
+                [
+                    {
+                        text: 'Cancel'
+                    },
+                    {
+                        text: 'Ok',
+                        onPress: () => {
+                            this.props.onchangeFriend('', st, '');
+                            this.props.navigation.closeDrawer();
+                            this.props.navigation.navigate('Home');
+                        }
+                    }
+                ],
+                { cancelable: true }
+            );
+            return;
+        }
+        this.props.onchangeFriend(key, st, subtitle, ava);
         this.props.navigation.closeDrawer();
         this.props.navigation.navigate('Home');
     }
@@ -245,7 +310,12 @@ class CustomDrawer extends Component {
                 leftAvatar={{ source: { uri: urlImg + item.data.Avatar_url } }}
                 extraData={this.state}
                 title={item.data.subtitle}
-                onPress={this.gotoMap}
+                onPress={() => this.gotoMap(
+                    item.key, 
+                    item.data.online, 
+                    item.data.subtitle, 
+                    urlImg + item.data.Avatar_url
+                    )}
                 rightElement={
                     <View
                         style={{
@@ -254,22 +324,50 @@ class CustomDrawer extends Component {
                             alignItems: 'center'
                         }}
                     >
-                        <View
-                            style={{
-                                backgroundColor: item.data.online ? 'green' : 'cyan',
-                                width: 10,
-                                height: 10,
-                                borderRadius: 5,
-                            }}
-                        />
-                        <Tooltip 
-                        popover={this.popoverItems}
-                        >
-                            <Image
-                                source={icMenu}
-                                style={{ width: 15, height: 15, marginLeft: 5 }}
+                        {
+                            (item.data.block) ?  
+                            <Icon 
+                                name='error-outline' 
+                                size={15}
+                                color='#000'
+                            /> :
+                            null
+                        }
+                        {
+                            (item.data.online === 'NONE') ?
+                            <Icon 
+                                name='block'
+                                size={15}
+                                color='#000'
+                            /> :
+                            <View
+                                style={{
+                                    backgroundColor: item.data.online ? 'green' : 'cyan',
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 5,
+                                }}
                             />
-                        </Tooltip>
+                        }
+                        <PopoverTooltip
+                            buttonComponent={
+                                <Image
+                                    source={icMenu}
+                                    style={{ width: 15, height: 15, marginLeft: 5 }}
+                                />
+                            }
+                            items={[
+                                {
+                                    label: 'Hủy kết bạn',
+                                    onPress: () => this.onUnFriend(item.key, item.data.subtitle),
+                                },
+                                {
+                                    label: (item.data.block)
+                                     ? 'Bỏ chặn!' : 'Chặn người này!',
+                                    onPress: () => this.onBlockFriend(item.key, item.data.block)
+                                },
+                            ]}
+                        />
                     </View>
                 }
             />

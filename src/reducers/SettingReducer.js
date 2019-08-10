@@ -1,27 +1,33 @@
 const stateSetting = {
     mySetting: {
-        isLocation: false,
+        isLocation: true,
         isUpdateLocation: true,
+        isAddFriend: true,
     }
 };
 
 
 const SettingReducer = (state = stateSetting, action) => {
+    const set = state.mySetting;
     switch (action.type) {
         case 'LOADSETTING': {
-            // let setting = {};
-            // getSetting().then((res) => {
-            //     setting = res;
-            //     console.log(res);
-            // });
-            const setting = action.set;
-            return { ...state, mySetting: setting };
+            if (action.set !== {}) {
+                Object.assign(set, action.set);
+            }
+            return { ...state, mySetting: set };
         }
         case 'ISSETTINGCHANGE': {
+            if (action.field === 'isLocation' && action.value === false) {
+                const obj = {
+                    isUpdateLocation: false,
+                };
+                obj[action.field] = action.value;
+                console.log(obj);
+                return { ...state, mySetting: Object.assign({}, set, obj) };
+            } 
             const obj = {};
-            obj[action.field] = action.value; 
-            Object.assign(state.mySetting, obj);
-            return { ...state };
+            obj[action.field] = action.value;
+            return { ...state, mySetting: Object.assign({}, set, obj) };
         }
         default: return state;
     }

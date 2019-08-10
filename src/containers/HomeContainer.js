@@ -10,7 +10,8 @@ class HomeContainer extends Component {
             <HomeScreen
                 {...this.props}
                 setting={this.props.setting}
-                profile={this.props.profile}
+                user={this.props.user}
+                friend={this.props.friend}
             />
         );
     }
@@ -19,7 +20,9 @@ class HomeContainer extends Component {
 export default connect(
     state => {
         return {
-            profile: state.ProfileReducer.profile,
+            user: state.ProfileReducer.profile,
+            setting: state.SettingReducer.mySetting,
+            friend: state.ProfileReducer.friend,
         };
     }
 )(HomeContainer);

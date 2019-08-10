@@ -12,6 +12,7 @@ class ResultScreen extends Component {
             Username: '',
             Avatar_url: '',
             subtitle: '',
+            isAddFriend: '',
         }
     }
 
@@ -22,19 +23,24 @@ class ResultScreen extends Component {
     }
 
     onAddFriend = async() => {
-        const userToken = await AsyncStorage.getItem('userToken');
-        addFriend(userToken, this.state.result.Username).then(res => {
-            console.log(res);
-            if (res === 'THANH_CONG') {
-                this.props.navigation.navigate('SucessOverlay', {
-                    SUCESS: 1
-                });
-            } else {
-                this.props.navigation.navigate('SucessOverlay', {
-                    SUCESS: 0
-                });
-            }
-        });
+        if (this.state.result.isAddFriend === '1') {
+            const userToken = await AsyncStorage.getItem('userToken');
+            addFriend(userToken, this.state.result.Username).then(res => {
+                if (res === 'THANH_CONG') {
+                    this.props.navigation.navigate('SucessOverlay', {
+                        SUCESS: 1
+                    });
+                } else {
+                    this.props.navigation.navigate('SucessOverlay', {
+                        SUCESS: 0
+                    });
+                }
+            });
+        } else {
+            this.props.navigation.navigate('ErrorOverlay', {
+                ERROR: 2
+            });
+        }
     }
 
     render() {
@@ -93,7 +99,7 @@ class ResultScreen extends Component {
                             alignItems: 'center',
                             marginRight: 1
                         }}
-                        onPress={this.onAddFriend}
+                        onPress={() => this.onAddFriend()}
                     >
                         <Text
                             style={{ color: '#fff' }}

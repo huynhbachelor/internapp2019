@@ -4,6 +4,8 @@ import {
     AsyncStorage,
     View,
     Text,
+    Alert,
+    BackHandler
 } from 'react-native';
 import { urlImg } from '../../api/base_url';
 import checkLogin from '../../api/checkLogin';
@@ -15,19 +17,28 @@ class AuthLoadingScreen extends Component {
     }
 
     getLoginInfor = async () => {
+        const obj = {};
+        await AsyncStorage.getItem('settings').then((strResult) => {
+            const result = JSON.parse(strResult) || {};
+            Object.assign(obj, result);
+            this.props.updateSetting(obj);
+        });
         const userToken = await AsyncStorage.getItem('userToken');
-        console.log(userToken);
         if (userToken === null) {
             this.props.navigation.navigate('SignIn');
         } else {
-            checkLogin(userToken)
+            this.getLogin(userToken);
+        }
+    }
+
+    getLogin = (token) => {
+        checkLogin(token)
+            .then(res => res.json())
             .then(res => {
                 if (res.token === 'HET_HAN') {
-                    alert('Đăng nhập quá hạn mời bạn đăng nhập lại!');
-                    this.props.navigation.navigate('SignIn');
+                    this.notification('Đăng nhập quá hạn mời bạn đăng nhập lại!');
                 } else if (res.token === 'TOKEN_KHONG_HOP_LE') {
-                    alert('Đăng nhập thất bại!');
-                    this.props.navigation.navigate('SignIn');
+                    this.notification('Đăng nhập thất bại!\nĐăng nhập lại');
                 } else {
                     const profile = {
                         token: res.token,
@@ -41,11 +52,27 @@ class AuthLoadingScreen extends Component {
                     AsyncStorage.setItem('userToken', res.token);
                 }
             })
-            .catch(e => {
-                alert('Lỗi không xác định! Vui lòng đăng nhập lại!');
-                this.props.navigation.navigate('SignIn');
+            .catch(() => {
+                this.notification('Kết nối đến máy chủ thất bai!\nĐăng nhập lại?');
             });
-        }
+    }
+
+    notification = (e) => {
+        Alert.alert(
+            'Thông báo',
+            e,
+            [
+                {
+                    text: 'Cancel', 
+                    onPress: () => BackHandler.exitApp()
+                },
+                {
+                    text: 'Ok',
+                    onPress: () => { this.props.navigation.navigate('SignIn'); }
+                }
+            ],
+            { cancelable: true }
+        );
     }
 
     render() {

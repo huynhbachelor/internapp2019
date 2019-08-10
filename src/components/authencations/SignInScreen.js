@@ -6,6 +6,7 @@ import {
     Text,
     TouchableOpacity,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { Icon, Input, CheckBox, Button, Image } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -24,6 +25,7 @@ class SignInScreen extends Component {
         eyechek: false,
         userName: '',
         passWord: '',
+        status: false,
     }
 
     componentDidMount() {
@@ -83,19 +85,34 @@ class SignInScreen extends Component {
     }
 
     login = () => {
+        this.setState({
+            status: true
+        });
         let tokenuser = '';
         let user = null;
         login(this.state.userName, this.state.passWord)
-            .then(res => {
-                tokenuser = res.token;
-                user = res.user;
-                if (tokenuser !== 'SAI_THONG_TIN') {
-                    this.onSuccess(tokenuser, user);
-                } else {
-                    this.onFail();
-                }
-            })
-            .catch(err => alert(err));
+        .then(res => {
+            tokenuser = res.token;
+            user = res.user;
+            if (tokenuser !== 'SAI_THONG_TIN') {
+                this.onSuccess(tokenuser, user);
+            } else {
+                this.onFail();
+            }
+        })
+        .catch(() => {
+            this.setState({ status: false });
+            Alert.alert(
+                'Thông báo',
+                'Kết nối tới máy chủ thất bại.',
+                [
+                    { 
+                        text: 'OK' 
+                    }
+                ],
+                { cancelable: false }
+            );
+        });
     }
 
     gotoRegister = () => {
@@ -127,6 +144,7 @@ class SignInScreen extends Component {
         const {
             userName,
             passWord,
+            status
         } = this.state;
 
         const imgTest = (
@@ -145,6 +163,11 @@ class SignInScreen extends Component {
                 enableOnAndroid
                 enableAutomaticScroll
             >
+                <ActivityIndicator 
+                    size="large" 
+                    color="#0000ff"
+                    animating={status}
+                />
                 <View style={logoStyle}>
                     <Icon name='rowing' />
                 </View>

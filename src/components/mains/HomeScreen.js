@@ -5,34 +5,121 @@ import {
     Text,
     ToastAndroid,
     PermissionsAndroid,
-    Platform
+    Platform,
+    Alert
 } from 'react-native';
-import MapView from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Icon, Avatar, Overlay } from 'react-native-elements';
 import Geolocation from 'react-native-geolocation-service';
+import firebaseApp, { writeData } from '../../firebase';
 import OverlayScreen from './myoverlay/OverlayScreen';
+import getListDirection from '../../api/getListDirection';
+import changeStatus from '../../api/changeStatus';
 
 class HomeScreen extends Component {
 
     state = {
         isVisible: false,
-        curPos: {
-            latitude: 0,
-            longitude: 0,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121,
-            error: null,
-        },
-        curPos2: {
+        myCurpos: {
             latitude: 10.8393125,
             longitude: 106.7736884,
             latitudeDelta: 0.015,
             longitudeDelta: 0.0121,
-        }
+        },
+        frCurpos: {
+            latitude: 10.8393125,
+            longitude: 106.7736884,
+            latitudeDelta: 0.015,
+            longitudeDelta: 0.0121,
+        },
+        coordinates: [],
+        isDirection: false,
     }
 
     componentDidMount() {
         this.getLocation();
+        this.getLocationUpdates();
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (prevProps.friend.Userfriend !== this.props.friend.Userfriend) {
+            if (prevProps.friend.Userfriend !== '') {
+                firebaseApp.database().ref(prevProps.friend.Userfriend).child('where').off();
+            }
+            this.getLocationFriend(this.props.friend.Userfriend,
+                this.props.friend.status);
+        }
+        if (prevProps.setting.isLocation !== this.props.setting.isLocation) {
+            if (this.props.setting.isLocation) {
+                changeStatus(this.props.user.token,
+                    this.props.setting.isUpdateLocation);
+            } else {
+                changeStatus(this.props.user.token, 'NONE');
+            }
+        }
+
+        if (prevState.myCurpos !== this.state.myCurpos || 
+            prevState.frCurpos !== this.state.frCurpos) {
+                if (this.state.isDirection) {
+                    this.getDirection();
+                }
+        }
+
+        if (prevProps.setting.isUpdateLocation !== this.props.setting.isUpdateLocation) {
+            changeStatus(this.props.user.token,
+                this.props.setting.isUpdateLocation);
+        }
+    }
+
+    getLocationFriend = async (user, status) => {
+        if (status === 'NONE') {
+            this.setState({
+                coordinates: [],
+                isDirection: false
+            });
+            return;
+        }
+        this.setState({ isDirection: true });
+        if (status) {
+            firebaseApp.database().ref(user).child('where').on('value', (snapshot) => {
+                if (this.state.isDirection) {
+                    this.setState({
+                        frCurpos: {
+                            ...this.state.frCurpos,
+                            latitude: snapshot.val().latitude,
+                            longitude: snapshot.val().longitude
+                        }
+                    });
+                }
+            });
+        } else {
+            firebaseApp.database().ref(user).child('where').once('value', (snapshot) => {
+                this.setState({
+                    frCurpos: {
+                        ...this.state.frCurpos,
+                        latitude: snapshot.val().latitude,
+                        longitude: snapshot.val().longitude
+                    }
+                });
+            });
+        }
+    }
+
+    getDirection = () => {
+        getListDirection(this.state.myCurpos, this.state.frCurpos)
+        .then(res => {
+            if (res !== null) {
+                const items = [];
+                res.map((e) => {
+                    items.push({
+                        latitude: e[1], longitude: e[0]
+                    });
+                });
+                this.setState({
+                    coordinates: items
+                });
+            }
+        });
     }
 
     getLocation = async () => {
@@ -40,23 +127,21 @@ class HomeScreen extends Component {
 
         if (!hasLocationPermission) return;
 
-        this.setState({ loading: true }, () => {
-            Geolocation.getCurrentPosition(
-                (position) => {
-                    this.geoSuccess(position);
-                },
-                (err) => {
-                    this.geoFailure(err);
-                },
-                { 
-                    enableHighAccuracy: true, 
-                    timeout: 15000, 
-                    maximumAge: 10000, 
-                    distanceFilter: 50, 
-                    forceRequestLocation: true 
-                }
-            );
-        });
+        Geolocation.getCurrentPosition(
+            (position) => {
+                this.geoSuccess(position);
+            },
+            (err) => {
+                this.geoFailure(err);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 10000,
+                distanceFilter: 50,
+                forceRequestLocation: true,
+            }
+        );
     }
 
     getLocationUpdates = async () => {
@@ -64,28 +149,26 @@ class HomeScreen extends Component {
 
         if (!hasLocationPermission) return;
 
-        this.setState({ updatesEnabled: true }, () => {
-            this.watchId = Geolocation.watchPosition(
-                (position) => {
-                    console.log(position);
-                },
-                (error) => {
-                    console.log(error);
-                },
-                { 
-                    enableHighAccuracy: true, 
-                    distanceFilter: 0, 
-                    interval: 5000, 
-                    fastestInterval: 2000 
-                }
-            );
-        });
+        this.watchId = Geolocation.watchPosition(
+            (position) => {
+                this.geoSuccess(position);
+
+            },
+            (err) => {
+                this.geoFailure(err);
+            },
+            {
+                enableHighAccuracy: true,
+                distanceFilter: 5,
+                interval: 5000,
+                fastestInterval: 2000
+            }
+        );
     }
 
     removeLocationUpdates = () => {
         if (this.watchId !== null) {
             Geolocation.clearWatch(this.watchId);
-            this.setState({ updatesEnabled: false });
         }
     }
 
@@ -93,17 +176,35 @@ class HomeScreen extends Component {
 
     geoSuccess = (position) => {
         this.setState({
-            curPos: {
+            myCurpos: {
+                ...this.state.myCurpos,
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
-                latitudeDelta: 0.015,
-                longitudeDelta: 0.0121,
             }
         });
+
+        if (this.state.isDirection) {
+            this.getDirection();
+        }
+        
+        if (this.props.setting.isUpdateLocation) {
+            writeData(this.props.user.Username,
+                position.coords.latitude,
+                position.coords.longitude);
+        }
     }
 
     geoFailure = (err) => {
-        this.setState({ curPos: { error: err.message } });
+        Alert.alert(
+            'Thông báo',
+            'Lỗi! ' + err,
+            [
+                {
+                    text: 'OK',
+                }
+            ],
+            { cancelable: false }
+        );
     }
 
     hasLocationPermission = async () => {
@@ -143,6 +244,25 @@ class HomeScreen extends Component {
         });
     }
 
+    markerFriend = () => {
+        if (this.props.friend.status !== 'NONE') {
+            return (
+                <Marker
+                    coordinate={this.state.frCurpos}
+                    anchor={{ x: 0.5, y: 0.5 }}
+                    title={this.props.friend.subtitle}
+                >
+                    <Avatar
+                        rounded
+                        source={{
+                            uri: this.props.friend.Avatar_url,
+                        }}
+                    />
+                </Marker>
+            );
+        } 
+    };
+
     render() {
         const {
             container,
@@ -152,6 +272,7 @@ class HomeScreen extends Component {
             map,
             overlayStyle,
         } = styles;
+
         return (
             <View style={container}>
                 <View style={header}>
@@ -173,37 +294,32 @@ class HomeScreen extends Component {
                 </View>
                 <View style={mapContainer}>
                     <MapView
+                        provider={this.props.provider}
                         style={map}
-                        region={this.state.curPos}
+                        initialRegion={this.state.myCurpos}
+                        region={this.state.myCurpos}
                     >
-                        <MapView.Marker
-                            coordinate={this.state.curPos}
+                        <Marker
+                            coordinate={this.state.myCurpos}
                             anchor={{ x: 0.5, y: 0.5 }}
-                            title='My'
+                            title='Tôi'
                         >
                             <Avatar
                                 rounded
                                 source={{
-                                    uri:
-                                        'https://scontent.fsgn8-1.fna.fbcdn.net/v/t1.0-1/p240x240/21369315_662301163968494_6369722257653880738_n.jpg?_nc_cat=110&_nc_oc=AQnIhTdUty-el472nKeRDQ4JSrSvM326yCYcUcy1uo1kYR8NK5Ibmz_uBATeUjue6GM&_nc_ht=scontent.fsgn8-1.fna&oh=776b296ad6142b640a9a5ea2d585bf66&oe=5DB3FDA4',
+                                    uri: this.props.user.Avatar_url,
                                 }}
                             />
-                        </MapView.Marker>
-                        <MapView.Marker
-                            coordinate={this.state.curPos2}
-                            anchor={{ x: 0.5, y: 0.5 }}
-                            title='Friend'
-                        >
-                            <Avatar
-                                rounded
-                                source={{
-                                    uri:
-                                        'https://scontent.fsgn3-1.fna.fbcdn.net/v/t1.0-1/p240x240/56835586_2286560624945251_4925639516355559424_n.jpg?_nc_cat=106&_nc_oc=AQk34OjQLHmstYSp49Wxbb5M5N7Qxm9S-LdeVoRRL4OaaRTFJnLS5Z9XVO7EmW72qrM&_nc_ht=scontent.fsgn3-1.fna&oh=148f44b035ab063624d1776c7c7d36de&oe=5DBEA48D',
-                                }}
-                            />
-                        </MapView.Marker>
+                        </Marker>
+                        {this.markerFriend()}
+                        <Polyline
+                            coordinates={this.state.coordinates}
+                            strokeColor="#238C23"
+                            fillColor="rgba(255,0,0,0.5)"
+                            strokeWidth={6}
+                        />
                     </MapView>
-            
+
                     <Overlay
                         isVisible={this.state.isVisible}
                         windowBackgroundColor="rgba(255, 255, 255, .5)"

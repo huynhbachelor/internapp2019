@@ -12,54 +12,11 @@ const firebaseConfig = {
 
 const firebaseApp = firebase.initializeApp(firebaseConfig);
 
-export const readData = async(userName) => {
-    return firebaseApp.database().ref(userName).child('WHERE').on('value', function(snapshot) {
-        obj = {
-            latitude: snapshot.val().latitude,
-            longitude: snapshot.val().longitude
-        };
-        return snapshot.val();
-    });  
-};
-
-export const readStatus = async(userName) => {
-    return firebaseApp.database().ref(userName).child('STATUS').on('value', (snapshot) => {
-        snapshot.val();
-    });  
-};
-
 export const writeData = (userName, lati, longi) => {
-    firebaseApp.database().ref(userName).child('WHERE').set({
+    firebaseApp.database().ref(userName).child('where').set({
         latitude: lati,
         longitude: longi,
     });
-};
-
-export const writeStatus = (userName) => {
-    firebaseApp.database().ref(userName).set({
-        STATUS: 0,
-    });
-};
-
-export const addFriend = (userName, nameFriend, avatarUrl, subtitle) => {
-    firebaseApp.database().ref(userName).child('friend_wait/' + nameFriend).set({
-        Avatar_url: avatarUrl,
-        subtitle,
-    });
-};
-
-export const submitFriend = (userName, nameFriend, avatarUrl, subtitle, online) => {
-    firebaseApp.database().ref(userName).child('friends/' + nameFriend).set({
-        Avatar_url: avatarUrl,
-        subtitle,
-        online
-    });
-};
-
-export const removeFriend = async(userName, nametable, key) => {
-    await firebaseApp.database().ref(userName).child(nametable).child(key).remove(
-
-    );
 };
 
 export default firebaseApp;
