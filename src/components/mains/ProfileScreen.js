@@ -1,5 +1,10 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, 
+    Text, 
+    StyleSheet, 
+    Alert,
+    ActivityIndicator,
+} from 'react-native';
 import { Icon, Input, Avatar, Button } from 'react-native-elements';
 import ImagePicker from 'react-native-image-picker';
 import uploadImg from '../../api/uploadImg';
@@ -10,6 +15,8 @@ class ProfileScreen extends Component {
     state = {
         Email: '',
         subtitle: '',
+        isLoading: false,
+        isUpdateImg: false,
     }
 
     componentDidMount() {
@@ -37,8 +44,22 @@ class ProfileScreen extends Component {
                 } else {
                     // this.uploadImg(response.uri);setState({ Avatar_url: response.uri });
                     this.props.updateImg(response.uri);
+                    this.setState({ isUpdateImg: true });
                 }
             }
+        );
+    }
+
+    notification = (mess) => {
+        Alert.alert(
+            'Thông báo',
+            mess,
+            [
+                {
+                    text: 'OK',
+                }
+            ],
+            { cancelable: false }
         );
     }
 
@@ -51,21 +72,50 @@ class ProfileScreen extends Component {
     }
 
     updateProfile = () => {
-        if (uploadImg(this.props.profile.Username, this.props.profile.Avatat_url)) {
-            if (changeInfor(this.props.profile.token,
-                this.props.profile.subtitle,
-                this.props.profile.Email)) {
-                alert('Cập nhật thành công!');
-                const profile = {
-                    ...this.props.profile,
-                    Email: this.state.Email,
-                    subtitle: this.state.subtitle,
-                };
-                this.props.changeProfile(profile);
-                return;
+        this.setState({ isLoading: true });
+        if (this.state.isUpdateImg) {
+            if (uploadImg(this.props.profile.Username, this.props.profile.Avatar_url)) {
+                changeInfor(this.props.profile.token,
+                    this.state.subtitle,
+                    this.state.Email)
+                    .then(res => {
+                        if (res === 'THANH_CONG') {
+                            this.notification('Cập nhật thành công!');
+                            const profile = {
+                                ...this.props.profile,
+                                Email: this.state.Email,
+                                subtitle: this.state.subtitle,
+                                Avatar_url: this.props.profile.Avatar_url + '?' + new Date(),
+                            };
+                            this.props.changeProfile(profile);
+                            this.setState({ isLoading: false });
+                        } else {
+                            this.notification('Cập nhật không thành công!');
+                        }
+                    }).catch(() => this.notification('Cập nhật không thành công!'));
+            } else {
+                this.notification('Cập nhật không thành công!');
             }
+        } else {
+            changeInfor(this.props.profile.token,
+                this.state.subtitle,
+                this.state.Email)
+                .then(res => {
+                    if (res === 'THANH_CONG') {
+                        this.notification('Cập nhật thành công!');
+                        const profile = {
+                            ...this.props.profile,
+                            Email: this.state.Email,
+                            subtitle: this.state.subtitle,
+                            Avatar_url: this.props.profile.Avatar_url + '?' + new Date(),
+                        };
+                        this.props.changeProfile(profile);
+                        this.setState({ isLoading: false });
+                    } else {
+                        this.notification('Cập nhật không thành công!');
+                    }
+                }).catch(() => this.notification('Cập nhật không thành công!'));
         }
-        alert('Cập nhật không thành công!');
     }
 
     Edittable = (num) => {
@@ -105,9 +155,17 @@ class ProfileScreen extends Component {
 
                     <Text
                         style={textTitle}
-                    >Profile</Text>
+                    >Thông tin cá nhân</Text>
                     <View style={{ width: 1 }} />
                 </View>
+                {
+                    (this.state.isLoading) ? 
+                    <ActivityIndicator 
+                        size='small'
+                        color='#0000ff'
+                    /> :
+                    null
+                }
                 <View style={formStyle}>
                     <View style={{ width: '100%', height: 'auto', alignItems: 'center' }}>
                         <Avatar

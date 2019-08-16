@@ -26,9 +26,14 @@ class ResultScreen extends Component {
         if (this.state.result.isAddFriend === '1') {
             const userToken = await AsyncStorage.getItem('userToken');
             addFriend(userToken, this.state.result.Username).then(res => {
+                console.log(res);
                 if (res === 'THANH_CONG') {
                     this.props.navigation.navigate('SucessOverlay', {
                         SUCESS: 1
+                    });
+                } else if (res === 'DA_TON_TAI') {
+                    this.props.navigation.navigate('SucessOverlay', {
+                        SUCESS: 2
                     });
                 } else {
                     this.props.navigation.navigate('SucessOverlay', {

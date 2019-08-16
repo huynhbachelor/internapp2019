@@ -8,7 +8,11 @@ class DrawerContainer extends Component {
 
     render() {
         return (
-            <CustomDrawer profile={this.props.profile} {...this.props} />
+            <CustomDrawer 
+                {...this.props}
+                profile={this.props.profile}
+                friend={this.props.friend}
+            />
         );
     }
 }
@@ -17,6 +21,7 @@ export default connect(
     state => {
         return {
             profile: state.ProfileReducer.profile,
+            friend: state.ProfileReducer.friend,
         };
     },
     dispatch => {

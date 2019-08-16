@@ -4,6 +4,7 @@ import {
     StyleSheet,
     Text,
     Alert,
+    ActivityIndicator
 } from 'react-native';
 import { Icon, Input, Button, } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -16,6 +17,7 @@ class RegisterScreen extends Component {
         userName: '',
         passWord: '',
         rePassword: '',
+        status: false,
     }
 
     onError() {
@@ -55,11 +57,13 @@ class RegisterScreen extends Component {
     }
 
     registerAuth = () => {
-        if (this.state.userName !== '' && this.state.passWord !== ''
+        if (this.state.userName.length >= 4 && this.state.passWord >= 6
             && this.state.rePassword === this.state.passWord) {
+            this.setState({ status: true });
             register(this.state.userName, this.state.passWord)
                 .then(res => {
                     if (res === 'THANH_CONG') {
+                        this.setState({ status: false });
                         this.onSuccess();
                     } else {
                         this.onFail();
@@ -91,6 +95,7 @@ class RegisterScreen extends Component {
             userName,
             passWord,
             rePassword,
+            status
         } = this.state;
 
         return (
@@ -102,6 +107,14 @@ class RegisterScreen extends Component {
                 enableOnAndroid
                 enableAutomaticScroll
             >
+                { 
+                    (status) ? 
+                    <ActivityIndicator 
+                        size="large" 
+                        color="#0000ff"
+                    /> :
+                    null
+                }
                 <View style={logoStyle}>
                     <Icon name='rowing' />
                 </View>
@@ -112,7 +125,7 @@ class RegisterScreen extends Component {
                             fontSize: 30,
                             fontWeight: 'bold'
                         }}
-                    >Register account</Text>
+                    >Tạo tài khoản mới</Text>
                     <Text>Register to continue</Text>
                 </View>
                 <View style={formStyle}>
@@ -121,7 +134,7 @@ class RegisterScreen extends Component {
                         onChangeText={(text) => this.setState({ userName: text })}
                         containerStyle={textStyle}
                         shake='true'
-                        placeholder='Username'
+                        placeholder='Tên đăng nhập'
                         leftIcon={<Icon
                             name='person'
                             size={24}
@@ -133,7 +146,7 @@ class RegisterScreen extends Component {
                         onChangeText={(text) => this.setState({ passWord: text })}
                         containerStyle={textStyle}
                         shake='true'
-                        placeholder='Password'
+                        placeholder='Mật khẩu'
                         secureTextEntry
                         leftIcon={<Icon
                             name='lock'
@@ -147,7 +160,7 @@ class RegisterScreen extends Component {
                         onChangeText={(text) => this.setState({ rePassword: text })}
                         containerStyle={textStyle}
                         shake='true'
-                        placeholder='Re-password'
+                        placeholder='Nhập lại mật khẩu'
                         secureTextEntry
                         leftIcon={<Icon
                             name='lock'
@@ -156,7 +169,7 @@ class RegisterScreen extends Component {
                         />}
                     />
                     <Button
-                        title="Register"
+                        title="Đăng kí"
                         containerStyle={{ height: 40, width: '100%' }}
                         onPress={this.registerAuth}
                     />

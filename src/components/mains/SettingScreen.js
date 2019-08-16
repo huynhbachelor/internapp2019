@@ -70,7 +70,7 @@ class SettingScreen extends Component {
                     />
                     <Text
                         style={textTitle}
-                    >Setting</Text>
+                    >Cài đặt</Text>
                     <View style={{ width: 1 }} />
                 </View>
                 <View>

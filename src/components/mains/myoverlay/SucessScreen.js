@@ -24,7 +24,9 @@ class SucessScreen extends Component {
                     >
                     {
                         (re === 1) ? 
-                        'Thêm thành công' : 
+                        'Thêm thành công' :
+                        (re === 2) ? 
+                        'Hai người đã trở thành bạn bè' :
                         'Thêm thất bại'
                     }
                     </Text>

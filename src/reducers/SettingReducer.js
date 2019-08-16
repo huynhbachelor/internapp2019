@@ -17,16 +17,17 @@ const SettingReducer = (state = stateSetting, action) => {
             return { ...state, mySetting: set };
         }
         case 'ISSETTINGCHANGE': {
+            let obj = {};
             if (action.field === 'isLocation' && action.value === false) {
-                const obj = {
+                obj = {
                     isUpdateLocation: false,
                 };
                 obj[action.field] = action.value;
                 console.log(obj);
-                return { ...state, mySetting: Object.assign({}, set, obj) };
-            } 
-            const obj = {};
-            obj[action.field] = action.value;
+            } else {
+                obj = {};
+                obj[action.field] = action.value;
+            }
             return { ...state, mySetting: Object.assign({}, set, obj) };
         }
         default: return state;

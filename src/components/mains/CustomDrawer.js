@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     ListView,
     Alert,
+    ActivityIndicator
 } from 'react-native';
 import {
     ListItem,
@@ -32,56 +33,78 @@ class CustomDrawer extends Component {
 
     state = {
         search: '',
-        dataSourceWait: new ListView.DataSource(
-            {
-                rowHasChanged: (r1, r2) => r1 !== r2,
-                sectionHeaderHasChanged: (s1, s2) => s1 !== s2,
-            }
-        ),
-        dataSourceFriend: new ListView.DataSource(
-            {
-                rowHasChanged: (r1, r2) => r1 !== r2,
-                sectionHeaderHasChanged: (s1, s2) => s1 !== s2,
-            }
-        ),
+        dataSourceWait: [],
+        dataSourceFriend: [],
+        isLoading: false
     }
 
     componentDidMount() {
         const user = this.props.profile.Username;
-        this.updateList(user);
+        if (user !== '') {
+            this.getListFriend(user);
+            this.getListFriendWait(user);
+        }
         firebaseApp.database().ref(user)
             .child('friends')
             .on('child_changed', (snapshot) => {
-                const items = {
+                const item = {
                     data: snapshot.val(),
                     key: snapshot.key,
                 };
-                this.onChange(items);
+                this.onChange2(item);
+                if (this.props.friend.Userfriend === item.key) {
+                    this.props.onchangeFriend(item.key, item.data.online, 
+                        item.data.subtitle, urlImg + item.data.Avatar_url + '?' + new Date());
+                }
             });
+        firebaseApp.database().ref(user)
+        .child('friend_wait')
+        .on('child_changed', (snapshot) => {
+            const item = {
+                data: snapshot.val(),
+                key: snapshot.key,
+            };
+            this.onChange1(item);
+        });
     }
 
     onDataArrived(newData) {
         this.setState({
-            dataSourceFriend: this.state.dataSourceFriend.cloneWithRowsAndSections(newData),
+            dataSourceFriend: [...this.state.dataSourceFriend, newData],
         });
     }
 
-    onChange = (item) => {
-        const items = this.state.dataSourceFriend._dataBlob;
+    onChange1 = (item) => {
+        const items = this.state.dataSourceWait;
         items.map(e => {
             if (e.key === item.key) {
                 e.data = item.data;
             }
         });
-        this.onDataArrived(items);
+        this.setState({
+            dataSourceWait: items,
+        });
     }
 
+    onChange2 = (item) => {
+        const items = this.state.dataSourceFriend;
+        items.map(e => {
+            if (e.key === item.key) {
+                e.data = item.data;
+            }
+        });
+        this.setState({
+            dataSourceFriend: items,
+        });
+    }
 
     onSubmitFriend = (user) => {
+        this.setState({ isLoading: true });
         submitFriend(this.props.profile.token, user)
             .then(res => {
                 if (res === 'THANH_CONG') {
-                    this.updateList(this.props.profile.Username);
+                    this.updateListWait(this.props.profile.Username);
+                    this.setState({ isLoading: false });
                     Alert.alert(
                         'Thông báo',
                         'Kết bạn thành công!',
@@ -93,6 +116,7 @@ class CustomDrawer extends Component {
                         { cancelable: false }
                     );
                 } else {
+                    this.setState({ isLoading: false });
                     Alert.alert(
                         'Thông báo',
                         'Không thể kết bạn! Hãy thử lại!',
@@ -110,6 +134,7 @@ class CustomDrawer extends Component {
                 }
             })
             .catch(() => {
+                this.setState({ isLoading: false });
                 Alert.alert(
                     'Thông báo',
                     'Kết nối máy chủ thất bại! thử lại!',
@@ -152,10 +177,12 @@ class CustomDrawer extends Component {
                 {
                     text: 'Ok',
                     onPress: () => {
+                        this.setState({ isLoading: true });
                         unFriend(this.props.profile.token, user)
-                        .then(
-                                this.getListFriend(this.props.profile.Username)
-                        );
+                        .then(() => {
+                            this.updateListFriend(this.props.profile.Username);
+                            this.setState({ isLoading: false });
+                        });
                     }
                 }
             ],
@@ -175,56 +202,73 @@ class CustomDrawer extends Component {
                     {
                         text: 'Ok',
                         onPress: () => {
-                            blockFriend(this.props.profile.token, user);
+                            this.setState({ isLoading: true });
+                            blockFriend(this.props.profile.token, user)
+                            .then(this.setState({ isLoading: false }));
                         }
                     }
                 ],
                 { cancelable: true }
             );
         } else {
-            unBlockFriend(this.props.profile.token, user);
+            this.setState({ isLoading: true });
+            unBlockFriend(this.props.profile.token, user)
+            .then(this.setState({ isLoading: false }));
         }
     }
 
 
     getListFriend = (userName) => {
-        const items = [];
         firebaseApp.database().ref(userName)
             .child('friends')
             .on('child_added', (snapshot) => {
-                items.push({
+                const item = {
                     data: snapshot.val(),
                     key: snapshot.key,
-                });
-                this.onDataArrived(items);
+                };
+                this.onDataArrived(item);
             });
     }
 
     getListFriendWait = (userName) => {
-        const items = [];
         firebaseApp.database().ref(userName)
         .child('friend_wait')
-        .on('child_added', (snapshot) => {
-            items.push({
-                data: snapshot.val(),
-                key: snapshot.key,
-            });
+        .on('child_added', (snap) => {
+            const item = {
+                data: snap.val(),
+                key: snap.key,
+            };
             this.setState({
-                dataSourceWait: this.state.dataSourceWait.cloneWithRowsAndSections(items),
+                dataSourceWait: [...this.state.dataSourceWait, item],
             });
         });
     }
 
     cancelFriend = (user) => {
-        unFriendWait(this.props.profile.token, user);
-        this.getListFriendWait(user);
+        this.setState({ isLoading: true });
+        unFriendWait(this.props.profile.token, user)
+        .then(() => {
+            this.setState({ isLoading: false });
+        });
+        this.updateListWait(user);
     }
 
-    updateList = (userName) => {
-        if (userName !== '') {
-            this.getListFriend(userName);
-            this.getListFriendWait(userName);
-        }
+    updateListWait = (userName) => {
+        this.setState({
+            dataSourceWait: [],
+        });
+        
+        firebaseApp.database().ref(userName).child('friend_wait').off();
+        this.getListFriendWait(userName);
+    }
+
+    updateListFriend = (userName) => {
+        this.setState({
+                dataSourceFriend: [],
+        });
+        
+        firebaseApp.database().ref(userName).child('friends').off();
+        this.getListFriend(userName);
     }
 
     updateSearch = search => {
@@ -243,7 +287,7 @@ class CustomDrawer extends Component {
                     {
                         text: 'Ok',
                         onPress: () => {
-                            this.props.onchangeFriend('', st, '');
+                            this.props.onchangeFriend(key, st, subtitle, ava);
                             this.props.navigation.closeDrawer();
                             this.props.navigation.navigate('Home');
                         }
@@ -306,15 +350,14 @@ class CustomDrawer extends Component {
     renderItems = ({ item }) => (
         <View style={{ flex: 1 }}>
             <ListItem
-                key={item.data.userName}
+                key={item.key}
                 leftAvatar={{ source: { uri: urlImg + item.data.Avatar_url } }}
-                extraData={this.state}
                 title={item.data.subtitle}
                 onPress={() => this.gotoMap(
                     item.key, 
                     item.data.online, 
                     item.data.subtitle, 
-                    urlImg + item.data.Avatar_url
+                    urlImg + item.data.Avatar_url,
                     )}
                 rightElement={
                     <View
@@ -385,7 +428,6 @@ class CustomDrawer extends Component {
         const {
             Avatar_url
         } = this.props.profile;
-
         return (
             <SafeAreaView
                 style={container}
@@ -414,17 +456,29 @@ class CustomDrawer extends Component {
                         onPress={this.gotoSetting}
                     />
                 </View>
-                <View style={friend}>
-                    <FlatList
-                        data={this.state.dataSourceWait._dataBlob}
-                        extraData={this.state}
-                        keyExtractor={(item) => item.key}
-                        renderItem={this.renderItemsWait}
-                    />
-                </View>
+                {
+                    (this.state.isLoading) ? 
+                    <ActivityIndicator 
+                        size='small'
+                        color='#0000ff'
+                    /> :
+                    null
+                }
+                {
+                    (this.state.dataSourceWait.length === 0) ? 
+                    null :
+                    <View style={friend}>
+                        <FlatList
+                            data={this.state.dataSourceWait}
+                            extraData={this.state}
+                            keyExtractor={(item) => item.key}
+                            renderItem={this.renderItemsWait}
+                        />
+                    </View>
+                }
                 <View style={{ flex: 5 }}>
                     <FlatList
-                        data={this.state.dataSourceFriend._dataBlob}
+                        data={this.state.dataSourceFriend}
                         extraData={this.state}
                         keyExtractor={(item) => item.key}
                         renderItem={this.renderItems}

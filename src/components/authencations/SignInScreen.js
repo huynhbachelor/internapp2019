@@ -163,11 +163,14 @@ class SignInScreen extends Component {
                 enableOnAndroid
                 enableAutomaticScroll
             >
-                <ActivityIndicator 
-                    size="large" 
-                    color="#0000ff"
-                    animating={status}
-                />
+                { 
+                    (status) ? 
+                    <ActivityIndicator 
+                        size="large" 
+                        color="#0000ff"
+                    /> :
+                    null
+                }
                 <View style={logoStyle}>
                     <Icon name='rowing' />
                 </View>
@@ -187,7 +190,7 @@ class SignInScreen extends Component {
                         onChangeText={(text) => this.setState({ userName: text })}
                         containerStyle={textStyle}
                         shake='true'
-                        placeholder='Username'
+                        placeholder='Tên đăng nhập'
                         leftIcon={<Icon
                             name='person'
                             size={24}
@@ -199,7 +202,7 @@ class SignInScreen extends Component {
                         onChangeText={(text) => this.setState({ passWord: text })}
                         containerStyle={textStyle}
                         shake='true'
-                        placeholder='Password'
+                        placeholder='Mật khẩu'
                         secureTextEntry={!this.state.eyechek}
                         leftIcon={<Icon
                             name='lock'
@@ -234,9 +237,9 @@ class SignInScreen extends Component {
                         containerStyle={{ height: 40, width: '100%' }}
                         onPress={this.login}
                     />
-                    <Text>Don't have an accout yet?</Text>
+                    <Text>Bạn chưa có tài khoản?</Text>
                     <Button
-                        title="Create account"
+                        title="Đăng kí"
                         containerStyle={{ height: 40, width: '100%' }}
                         type="outline"
                         onPress={this.gotoRegister}

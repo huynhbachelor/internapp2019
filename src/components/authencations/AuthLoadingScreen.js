@@ -91,7 +91,7 @@ class AuthLoadingScreen extends Component {
                         fontSize: 20,
                         color: '#fff'
                     }}
-                > Loading ...</Text>
+                > Đang tải ...</Text>
                 <ActivityIndicator size='large' />
             </View>
         );

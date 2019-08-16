@@ -6,15 +6,23 @@ import {
     ToastAndroid,
     PermissionsAndroid,
     Platform,
-    Alert
+    Alert,
+    Dimensions
 } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline, ProviderPropType } from 'react-native-maps';
 import { Icon, Avatar, Overlay } from 'react-native-elements';
 import Geolocation from 'react-native-geolocation-service';
 import firebaseApp, { writeData } from '../../firebase';
 import OverlayScreen from './myoverlay/OverlayScreen';
 import getListDirection from '../../api/getListDirection';
 import changeStatus from '../../api/changeStatus';
+
+const { width, height } = Dimensions.get('window');
+
+const ASPECT_RATIO = width / height;
+const LATITUDE_DELTA = 0.0922;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+const SPACE = 0.01;
 
 class HomeScreen extends Component {
 
@@ -23,17 +31,16 @@ class HomeScreen extends Component {
         myCurpos: {
             latitude: 10.8393125,
             longitude: 106.7736884,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
         },
         frCurpos: {
             latitude: 10.8393125,
             longitude: 106.7736884,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
         },
         coordinates: [],
-        isDirection: false,
     }
 
     componentDidMount() {
@@ -41,85 +48,68 @@ class HomeScreen extends Component {
         this.getLocationUpdates();
     }
 
-    componentDidUpdate(prevProps, prevState) {
-        if (prevProps.friend.Userfriend !== this.props.friend.Userfriend) {
+    componentDidUpdate(prevProps) {
+        if (prevProps.friend !== this.props.friend) {
             if (prevProps.friend.Userfriend !== '') {
-                firebaseApp.database().ref(prevProps.friend.Userfriend).child('where').off();
+                firebaseApp.database().ref(prevProps.friend.Userfriend).off();
             }
-            this.getLocationFriend(this.props.friend.Userfriend,
-                this.props.friend.status);
+            this.getLocationFriend(this.props.friend.Userfriend);
         }
-        if (prevProps.setting.isLocation !== this.props.setting.isLocation) {
-            if (this.props.setting.isLocation) {
-                changeStatus(this.props.user.token,
-                    this.props.setting.isUpdateLocation);
-            } else {
-                changeStatus(this.props.user.token, 'NONE');
-            }
-        }
-
-        if (prevState.myCurpos !== this.state.myCurpos || 
-            prevState.frCurpos !== this.state.frCurpos) {
-                if (this.state.isDirection) {
-                    this.getDirection();
+        if (prevProps.setting !== this.props.setting) {
+            if (prevProps.setting.isLocation !== this.props.setting.isLocation) {
+                if (this.props.setting.isLocation) {
+                    changeStatus(this.props.user.token,
+                        this.props.setting.isUpdateLocation);
+                } else {
+                    changeStatus(this.props.user.token, 'NONE');
                 }
-        }
-
-        if (prevProps.setting.isUpdateLocation !== this.props.setting.isUpdateLocation) {
-            changeStatus(this.props.user.token,
-                this.props.setting.isUpdateLocation);
+            } else {
+               changeStatus(this.props.user.token,
+                    this.props.setting.isUpdateLocation);
+            }
         }
     }
 
-    getLocationFriend = async (user, status) => {
-        if (status === 'NONE') {
-            this.setState({
-                coordinates: [],
-                isDirection: false
-            });
-            return;
-        }
-        this.setState({ isDirection: true });
-        if (status) {
-            firebaseApp.database().ref(user).child('where').on('value', (snapshot) => {
-                if (this.state.isDirection) {
+    getLocationFriend = async (user) => {
+        firebaseApp.database().ref(user).on('value', (snapshot) => {
+            if (snapshot.child('where').val() !== null) {
+                if (this.props.friend.status) {
                     this.setState({
                         frCurpos: {
                             ...this.state.frCurpos,
-                            latitude: snapshot.val().latitude,
-                            longitude: snapshot.val().longitude
-                        }
+                            latitude: snapshot.child('where').val().latitude,
+                            longitude: snapshot.child('where').val().longitude
+                        },
                     });
+                    this.getDirection();
                 }
-            });
-        } else {
-            firebaseApp.database().ref(user).child('where').once('value', (snapshot) => {
-                this.setState({
-                    frCurpos: {
-                        ...this.state.frCurpos,
-                        latitude: snapshot.val().latitude,
-                        longitude: snapshot.val().longitude
-                    }
-                });
-            });
-        }
+            }
+        });
     }
 
     getDirection = () => {
         getListDirection(this.state.myCurpos, this.state.frCurpos)
-        .then(res => {
-            if (res !== null) {
-                const items = [];
-                res.map((e) => {
+            .then(res => {
+                if (res !== null) {
+                    const items = [];
                     items.push({
-                        latitude: e[1], longitude: e[0]
+                        latitude: this.state.myCurpos.latitude,
+                        longitude: this.state.myCurpos.longitude
                     });
-                });
-                this.setState({
-                    coordinates: items
-                });
-            }
-        });
+                    res.map((e) => {
+                        items.push({
+                            latitude: e[1], longitude: e[0]
+                        });
+                    });
+                    items.push({
+                        latitude: this.state.frCurpos.latitude,
+                        longitude: this.state.frCurpos.longitude
+                    });
+                    this.setState({
+                        coordinates: items
+                    });
+                }
+            });
     }
 
     getLocation = async () => {
@@ -138,7 +128,7 @@ class HomeScreen extends Component {
                 enableHighAccuracy: true,
                 timeout: 15000,
                 maximumAge: 10000,
-                distanceFilter: 50,
+                distanceFilter: 0,
                 forceRequestLocation: true,
             }
         );
@@ -182,11 +172,9 @@ class HomeScreen extends Component {
                 longitude: position.coords.longitude,
             }
         });
-
-        if (this.state.isDirection) {
-            this.getDirection();
-        }
-        
+       
+        this.getDirection();
+    
         if (this.props.setting.isUpdateLocation) {
             writeData(this.props.user.Username,
                 position.coords.latitude,
@@ -261,6 +249,20 @@ class HomeScreen extends Component {
                 </Marker>
             );
         } 
+        return null;
+    };
+
+    directionShow = () => {
+        if (this.props.friend.status !== 'NONE') {
+            return (
+                <Polyline
+                    coordinates={this.state.coordinates}
+                    strokeColor="#238C23"
+                    fillColor="rgba(255,0,0,0.5)"
+                    strokeWidth={6}
+                />
+            );
+        }
     };
 
     render() {
@@ -284,7 +286,7 @@ class HomeScreen extends Component {
                     />
                     <Text
                         style={textTitle}
-                    >Home</Text>
+                    >Trang chủ</Text>
                     <Icon
                         name='person-add'
                         containerStyle={{ marginRight: 5 }}
@@ -298,6 +300,9 @@ class HomeScreen extends Component {
                         style={map}
                         initialRegion={this.state.myCurpos}
                         region={this.state.myCurpos}
+                        loadingEnabled
+                        loadingIndicatorColor="#666666"
+                        loadingBackgroundColor="#eeeeee"
                     >
                         <Marker
                             coordinate={this.state.myCurpos}
@@ -312,12 +317,7 @@ class HomeScreen extends Component {
                             />
                         </Marker>
                         {this.markerFriend()}
-                        <Polyline
-                            coordinates={this.state.coordinates}
-                            strokeColor="#238C23"
-                            fillColor="rgba(255,0,0,0.5)"
-                            strokeWidth={6}
-                        />
+                        {this.directionShow()}
                     </MapView>
 
                     <Overlay
@@ -368,6 +368,10 @@ class HomeScreen extends Component {
         );
     }
 }
+
+HomeScreen.propTypes = {
+    provider: ProviderPropType,
+};
 
 const styles = StyleSheet.create({
     container: {
